@@ -1,34 +1,26 @@
-package de.uniluebeck.itcr.models
+package de.uniluebeck.itcr.termserver_loadbalancer.models
 
-import de.uniluebeck.itcr.logger
+import de.uniluebeck.itcr.termserver_loadbalancer.JsonBackedStorage
+import de.uniluebeck.itcr.termserver_loadbalancer.Storage.Companion.loadBalancerConf
+import de.uniluebeck.itcr.termserver_loadbalancer.logger
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import java.io.File
 import java.net.URI
+import java.util.*
 
 @Serializable
-data class Endpoint(val id: Int? = null, private val url: String, val name: String) {
-    val uri: URI get() = URI(url.removeSuffix("/"))
+data class Endpoint(val uuid: String? = null, private val url: String, val name: String) {
+    val uri: URI get() = URI(url.removeSuffix("/").plus("/"))
+
+    fun resolveUri(path: String): URI = uri.resolve(path.removePrefix("/"))
 }
 
-class Endpoints {
-
-    private val json = Json { prettyPrint = true }
-    companion object {
-        private val fileLocation = File("src/main/resources/endpoints.json")
-    }
+class Endpoints : JsonBackedStorage<Endpoint>() {
     private val endpointList by lazy {
         mutableListOf<Endpoint>().also { endpoints ->
             val readEndpoints : List<Endpoint> = when (fileLocation.exists()) {
-                true -> {
-                    val jsonString = fileLocation.readText()
-                    Json.decodeFromString(jsonString)
-                }
+                true -> readFromStorage()
                 else -> {
                     logger.info("No endpoints.json found, creating new empty file")
-                    fileLocation.createNewFile()
                     listOf()
                 }
             }
@@ -36,23 +28,31 @@ class Endpoints {
         }
     }
 
-    fun getEndpoints() = endpointList.toList()
+    fun getEndpoints(): List<Endpoint> = endpointList.toList()
 
     fun addEndpoint(endpoint: Endpoint) {
-        val nextId = endpointList.maxOfOrNull { it.id ?: 0 } ?: 0
         when {
             endpointList.any { it.uri == endpoint.uri } -> {
-                throw IllegalArgumentException("Endpoint already exists")
+                throw IllegalArgumentException("Endpoint URI already exists")
             }
             endpointList.any { it.name == endpoint.name } -> {
                 throw IllegalArgumentException("Endpoint name already exists")
             }
             else -> {
-                endpointList.add(endpoint.copy(id = nextId + 1))
-                val jsonString = json.encodeToString(endpointList.toList())
-
-                fileLocation.writeText(jsonString)
+                val uuid = UUID.randomUUID().toString()
+                endpointList.add(endpoint.copy(uuid = uuid))
+                writeEndpoints()
+                loadBalancerConf.addEndpoint(uuid)
             }
         }
+    }
+
+    private fun writeEndpoints() = writeToStorage(endpointList.toList())
+
+    fun getEndpoints(endpointId: String): Endpoint? = endpointList.find { it.uuid.toString() == endpointId }
+    fun removeEndpoint(endpointId: String) {
+        endpointList.removeIf { it.uuid.toString() == endpointId }
+        loadBalancerConf.removeEndpoint(endpointId)
+        writeEndpoints()
     }
 }

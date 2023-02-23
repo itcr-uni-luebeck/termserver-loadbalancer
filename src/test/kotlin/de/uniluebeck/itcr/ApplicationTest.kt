@@ -5,7 +5,7 @@ import io.ktor.client.statement.*
 import io.ktor.server.testing.*
 import kotlin.test.*
 import io.ktor.http.*
-import de.uniluebeck.itcr.plugins.*
+import de.uniluebeck.itcr.termserver_loadbalancer.plugins.configureRouting
 
 class ApplicationTest {
     @Test

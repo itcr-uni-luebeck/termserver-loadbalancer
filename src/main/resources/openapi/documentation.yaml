@@ -14,17 +14,17 @@ servers:
   - url: "http://localhost:8080"
 
 tags:
+  - name: "fhir"
+    description: "These endpoints relate to the FHIR API, and are delegated to the downstream servers"
+  - name: "load-balancer"
+    description: "These endpoints relate to the management of the load balancing system"
+  - name: "endpoints"
+    description: "These endpoints relate to the management of endpoints registered with this instance"
   - name: "metrics"
     description: "This endpoint exposes metrics for the application using MicroMeter"
     externalDocs:
       description: "The MicroMeter documentation"
       url: "https://micrometer.io/docs"
-  - name: "endpoints"
-    description: "These endpoints relate to the management of endpoints registered with this instance"
-  - name: "load-balancer"
-    description: "These endpoints relate to the management of the load balancing system"
-  - name: "fhir"
-    description: "These endpoints relate to the FHIR API, and are delegated to the downstream servers"
 
 paths:
   /metrics-micrometer:
@@ -144,6 +144,30 @@ paths:
       tags:
         - "fhir"
       operationId: "get-fhir-metadata"
+      externalDocs:
+        description: "The FHIR specification for CapabilityStatement"
+        url: "https://www.hl7.org/fhir/capabilitystatement.html"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+                externalDocs:
+                    description: "The FHIR specification for CapabilityStatement"
+                    url: "https://www.hl7.org/fhir/capabilitystatement.html"
+  /fhir/{fhirLocation}:
+    get:
+      description: "Get data from the downstream servers - this is the most important GET operation for day-to-day operation"
+      tags:
+        - "fhir"
+      parameters:
+        - name: "fhirLocation"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
       responses:
         "200":
           description: "OK"

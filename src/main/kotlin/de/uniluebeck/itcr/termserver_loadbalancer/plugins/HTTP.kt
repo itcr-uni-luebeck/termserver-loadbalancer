@@ -1,4 +1,4 @@
-package de.uniluebeck.itcr.plugins
+package de.uniluebeck.itcr.termserver_loadbalancer.plugins
 
 import io.ktor.http.*
 import io.ktor.server.plugins.cors.routing.*
@@ -11,7 +11,7 @@ fun Application.configureHTTP() {
         allowMethod(HttpMethod.Delete)
         allowMethod(HttpMethod.Patch)
         allowHeader(HttpHeaders.Authorization)
-        allowHeader("MyCustomHeader")
+        allowHeader(HttpHeaders.ContentType)
         anyHost() // @TODO: Don't do this in production if possible. Try to limit it.
     }
 }

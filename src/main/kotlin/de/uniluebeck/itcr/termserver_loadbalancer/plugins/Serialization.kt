@@ -1,4 +1,4 @@
-package de.uniluebeck.itcr.plugins
+package de.uniluebeck.itcr.termserver_loadbalancer.plugins
 
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.plugins.contentnegotiation.*
@@ -13,9 +13,9 @@ fun Application.configureSerialization() {
             prettyPrint = true
         })
     }
-    routing {
+    /*routing {
         get("/json/kotlinx-serialization") {
             call.respond(mapOf("hello" to "world"))
         }
-    }
+    }*/
 }

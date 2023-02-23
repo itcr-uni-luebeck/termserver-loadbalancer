@@ -1,4 +1,4 @@
-package de.uniluebeck.itcr.plugins
+package de.uniluebeck.itcr.termserver_loadbalancer.plugins
 
 import io.ktor.server.plugins.callloging.*
 import org.slf4j.event.*
@@ -7,13 +7,12 @@ import io.ktor.http.*
 import io.ktor.server.plugins.callid.*
 import io.ktor.server.metrics.dropwizard.*
 import com.codahale.metrics.*
-import de.uniluebeck.itcr.logger
+import de.uniluebeck.itcr.termserver_loadbalancer.logger
 import io.micrometer.prometheus.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.response.*
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
-import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 fun Application.configureMonitoring() {

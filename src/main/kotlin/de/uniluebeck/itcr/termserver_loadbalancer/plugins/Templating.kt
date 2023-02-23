@@ -1,4 +1,4 @@
-package de.uniluebeck.itcr.plugins
+package de.uniluebeck.itcr.termserver_loadbalancer.plugins
 
 import com.github.mustachejava.DefaultMustacheFactory
 import io.ktor.server.mustache.Mustache
@@ -11,11 +11,11 @@ fun Application.configureTemplating() {
     install(Mustache) {
         mustacheFactory = DefaultMustacheFactory("templates/mustache")
     }
-    routing {
+    /*routing {
         get("/html-mustache") {
             call.respond(MustacheContent("index.hbs", mapOf("user" to MustacheUser(1, "user1"))))
         }
-    }
+    }*/
 }
 
 data class MustacheUser(val id: Int, val name: String)
