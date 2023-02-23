@@ -1,0 +1,184 @@
+openapi: "3.0.3"
+
+info:
+  title: "TermServer Loadbalancer API"
+  description: "The management API for the TS load balancer tool"
+  version: "0.1.0"
+  contact:
+    name: "SU-TermServ team"
+    email: "team@mail.mii-termserv.de"
+  license:
+    name: "GPL 3.0"
+
+servers:
+  - url: "http://localhost:8080"
+
+tags:
+  - name: "metrics"
+    description: "This endpoint exposes metrics for the application using MicroMeter"
+    externalDocs:
+      description: "The MicroMeter documentation"
+      url: "https://micrometer.io/docs"
+  - name: "endpoints"
+    description: "These endpoints relate to the management of endpoints registered with this instance"
+  - name: "load-balancer"
+    description: "These endpoints relate to the management of the load balancing system"
+  - name: "fhir"
+    description: "These endpoints relate to the FHIR API, and are delegated to the downstream servers"
+
+paths:
+  /metrics-micrometer:
+    get:
+      description: "Get micrometer metrics"
+      operationId: "micrometer"
+      tags:
+        - "metrics"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+  /api/endpoints:
+    get:
+      description: "List the TS endpoints registered with this instance"
+      operationId: "get-api-endpoints"
+      tags:
+        - "endpoints"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Endpoint"
+    post:
+      description: "Create a new endpoint in this instance."
+      operationId: "post-api-endpoints"
+      tags:
+        - "endpoints"
+      requestBody:
+        description: "The new endpoint to create"
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                name:
+                  type: "string"
+                url:
+                  type: "string"
+                  format: "url"
+      responses:
+        "400":
+          description: "Bad Request"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                EndpointIdSet:
+                  value: "Endpoint ID must not be set"
+        "200":
+          description: "OK - the endpoint was created"
+          content:
+            '*/*':
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Endpoint"
+  /api/endpoints/{endpoint_id}:
+    parameters:
+      - name: "endpoint_id"
+        in: "path"
+        required: true
+        schema:
+          type: integer
+    get:
+      description: "Retrieve an endpoint by its ID"
+      tags:
+        - "endpoints"
+      operationId: "api-endpoints-get-by-id"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Endpoint"
+        "404":
+          description: "Not found"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+    delete:
+      description: "Delete an endpoint by its ID"
+      operationId: "api-endpoints-delete-by-id"
+      tags:
+        - "endpoints"
+      responses:
+        "204":
+          description: "The resource was deleted"
+        "404":
+          description: "The resource wasn't found for deletion"
+  /api/load-balancer:
+    get:
+      description: "Get the state of the load balancer"
+      tags:
+        - "load-balancer"
+      operationId: "get-api-load_balancer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LoadBalancingState"
+  /fhir/metadata:
+    get:
+      description: "Get the FHIR metadata"
+      tags:
+        - "fhir"
+      operationId: "get-fhir-metadata"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+components:
+  schemas:
+    Endpoint:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        url:
+          type: "string"
+          format: "url"
+        name:
+          type: "string"
+    Map:
+      type: "object"
+      properties: {}
+    LoadBalancingState:
+      type: "object"
+      properties:
+        strategy:
+          type: "string"
+          description: "the strategy that this load balancer currently uses for request distribution"
+          enum:
+            - "ROUND_ROBIN"
+            - "RANDOM"
+            - "BLUE_GREEN"
+            - "ONLY_ONE_SERVER"
+        readOnlyModeEnabled:
+          type: "boolean"
+        endpointMap:
+          $ref: "#/components/schemas/Map"

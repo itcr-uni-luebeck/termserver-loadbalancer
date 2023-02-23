@@ -1,0 +1,16 @@
+### Micrometer Metrics
+
+GET http://localhost:8080/metrics-micrometer
+
+### Configured Upstreams
+
+GET http://localhost:8080/api/endpoints
+
+### Post endpoint
+POST http://localhost:8080/api/endpoints
+Content-Type: application/json
+
+{
+  "name": "Test Ontoserver IMI",
+  "url": "https://ontoserver.imi.uni-luebeck.de/fhir"
+}
