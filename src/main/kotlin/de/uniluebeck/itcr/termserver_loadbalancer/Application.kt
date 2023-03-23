@@ -15,6 +15,9 @@ import javax.net.ssl.X509TrustManager
 val logger: Logger = LoggerFactory.getLogger("de.uniluebeck.itcr.Application")
 val fhirContext: FhirContext by lazy { FhirContext.forR4B() }
 
+const val APP_NAME = "TermServer LoadBalancer"
+const val APP_VERSION = "0.1.0"
+
 fun main() {
     val environment = applicationEngineEnvironment {
         //log = logger
@@ -118,7 +121,7 @@ fun generateKeystoreFromDir(dir: File, buildServerKeystore: Boolean): SslSetting
 fun Application.module() {
     configureMonitoring()
     configureSerialization()
-    configureTemplating()
+    //configureTemplating()
     configureHTTP()
     configureRouting()
 }

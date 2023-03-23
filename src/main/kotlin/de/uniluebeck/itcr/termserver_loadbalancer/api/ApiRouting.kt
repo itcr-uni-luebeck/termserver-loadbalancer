@@ -9,6 +9,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.util.pipeline.*
 
 fun Route.routeApi() {
     route("/endpoints") {
@@ -27,12 +28,24 @@ private fun Route.endpointsRoute() {
     }
 
     post {
-        val endpoint = call.receive<Endpoint>()
+        val endpoint: Endpoint = when (call.request.contentType()) {
+            ContentType.Application.FormUrlEncoded -> {
+                val params = call.receiveParameters()
+                Endpoint(
+                    url = params["uri"] ?: return@post call.respond(HttpStatusCode.BadRequest, "URI must be set"),
+                    name = params["name"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Name must be set")
+                )
+            }
+            else ->  call.receive()
+        }
         if (endpoint.uuid != null) {
             call.respond(HttpStatusCode.BadRequest, "Endpoint ID must not be set")
             return@post
         }
         endpoints.addEndpoint(endpoint)
+        if (call.request.accept()?.contains("html") == true ) {
+            call.respondRedirect("/ui")
+        }
         call.respond(Endpoints().getEndpoints())
     }
 
@@ -47,15 +60,27 @@ private fun Route.endpointsRoute() {
             }
         }
 
-        delete {
-            val endpointId = call.parameters["endpoint_id"] ?: return@delete call.respond(HttpStatusCode.BadRequest, "Endpoint ID must be set")
-            val endpoint = endpoints.getEndpoints(endpointId)
-            if (endpoint == null) {
-                call.respond(HttpStatusCode.NotFound, "Endpoint not found")
-            } else {
-                endpoints.removeEndpoint(endpointId)
-                call.respond(HttpStatusCode.NoContent)
-            }
+        post("/delete") {
+            deleteEndpoint()
         }
+
+        delete {
+            deleteEndpoint()
+        }
+    }
+}
+
+
+private suspend fun PipelineContext<Unit, ApplicationCall>.deleteEndpoint() {
+    val endpointId = call.parameters["endpoint_id"] ?: return call.respond(HttpStatusCode.BadRequest, "Endpoint ID must be set")
+    val endpoint = endpoints.getEndpoints(endpointId)
+    if (endpoint == null) {
+        call.respond(HttpStatusCode.NotFound, "Endpoint not found")
+    } else {
+        endpoints.removeEndpoint(endpointId)
+        if (call.request.accept()?.contains("html") == true ) {
+            call.respondRedirect("/ui")
+        }
+        call.respond(HttpStatusCode.NoContent)
     }
 }

@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 
 fun Application.configureMonitoring() {
     install(CallLogging) {
-        level = Level.INFO
+        level = Level.DEBUG
         filter { call -> call.request.path().startsWith("/") }
         callIdMdc("call-id")
     }
@@ -41,7 +41,7 @@ fun Application.configureMonitoring() {
         registry = appMicrometerRegistry
     }
     routing {
-        get("/metrics-micrometer") {
+        get("/metrics") {
             call.respond(appMicrometerRegistry.scrape())
         }
     }

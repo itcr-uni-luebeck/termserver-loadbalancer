@@ -1,10 +1,6 @@
 package de.uniluebeck.itcr.termserver_loadbalancer.fhir
 
-import de.uniluebeck.itcr.termserver_loadbalancer.LoadBalancer
-import de.uniluebeck.itcr.termserver_loadbalancer.Storage
-import de.uniluebeck.itcr.termserver_loadbalancer.fhirContext
-import de.uniluebeck.itcr.termserver_loadbalancer.logger
-import io.ktor.client.call.*
+import de.uniluebeck.itcr.termserver_loadbalancer.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -89,6 +85,3 @@ private fun generateCapabilityStatement(): CapabilityStatement = CapabilityState
         }
     })
 }
-
-const val APP_NAME = "TermServer LoadBalancer"
-const val APP_VERSION = "0.1.0"

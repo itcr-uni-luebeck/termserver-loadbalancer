@@ -11,7 +11,7 @@ info:
     name: "GPL 3.0"
 
 servers:
-  - url: "http://localhost:8080"
+  - url: "http://0.0.0.0:8080"
 
 tags:
   - name: "fhir"
@@ -27,7 +27,7 @@ tags:
       url: "https://micrometer.io/docs"
 
 paths:
-  /metrics-micrometer:
+  /metrics:
     get:
       description: "Get micrometer metrics"
       operationId: "micrometer"

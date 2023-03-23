@@ -2,12 +2,14 @@ package de.uniluebeck.itcr.termserver_loadbalancer.plugins
 
 import de.uniluebeck.itcr.termserver_loadbalancer.api.routeApi
 import de.uniluebeck.itcr.termserver_loadbalancer.fhir.fhirApi
+import de.uniluebeck.itcr.termserver_loadbalancer.ui.uiRouting
+import de.uniluebeck.itcr.termserver_loadbalancer.ui.staticRouting
+import de.uniluebeck.itcr.termserver_loadbalancer.ui.swaggerRouting
 import io.ktor.server.routing.*
 import io.ktor.server.response.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.swagger.*
 
 fun Application.configureRouting() {
     install(StatusPages) {
@@ -22,6 +24,13 @@ fun Application.configureRouting() {
         route("/fhir") {
             fhirApi()
         }
-        swaggerUI(path = "swagger", swaggerFile = "openapi/documentation.yaml")
+        uiRouting()
+        staticRouting()
+        swaggerRouting()
+        route("/") {
+            get {
+                call.respondRedirect("/ui")
+            }
+        }
     }
 }
