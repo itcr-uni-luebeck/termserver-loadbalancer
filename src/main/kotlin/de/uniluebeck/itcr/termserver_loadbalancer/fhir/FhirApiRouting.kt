@@ -4,26 +4,20 @@ import de.uniluebeck.itcr.termserver_loadbalancer.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.hl7.fhir.r4b.model.*
 
-private val fhirParser by lazy {
-    fhirContext.newJsonParser().setPrettyPrint(true)
-}
-
 fun Route.fhirApi() {
     get("/metadata") {
         logger.info("FHIR GET request to metadata")
-        val capabilityStatementString = fhirParser.encodeResourceToString(generateCapabilityStatement())
-        call.respond(capabilityStatementString)
+        call.respondFhir(generateCapabilityStatement())
     }
 
     get("/{...fhirLocation}") {
         val fhirLocation = call.parameters["...fhirLocation"] ?: ""
         logger.info("FHIR GET request to $fhirLocation")
-        val desiredEncoding = call.request.accept() ?: "application/json"
+        val desiredEncoding = call.desiredFhirEncoding()
         val (balancedResponse, downstreamUrl) = LoadBalancer.requestGet(fhirLocation, desiredEncoding)
         logger.info(balancedResponse.toString())
         call.response.header("X-Downstream-URL", downstreamUrl.toString())
@@ -85,3 +79,5 @@ private fun generateCapabilityStatement(): CapabilityStatement = CapabilityState
         }
     })
 }
+
+class FhirVersionUnsupportedException(fhirVersion: String?) : Exception("The FHIR version '$fhirVersion' is not supported")

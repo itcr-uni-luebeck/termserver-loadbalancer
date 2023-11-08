@@ -6,6 +6,7 @@ import de.uniluebeck.itcr.termserver_loadbalancer.models.EndpointStatus
 import de.uniluebeck.itcr.termserver_loadbalancer.models.LoadBalancingStrategy
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
 import java.net.URI
 
 class LoadBalancer {
@@ -15,7 +16,7 @@ class LoadBalancer {
         private val numberOfActiveEndpoints get() = activeEndpoints.size
 
         private var roundRobinIndex = 0
-        suspend fun requestGet(fhirLocation: String, desiredEncoding: String) : Pair<HttpResponse, URI> {
+        suspend fun requestGet(fhirLocation: String, desiredEncoding: ContentType) : Pair<HttpResponse, URI> {
             val targetServerId = when(val strategy = loadBalancerConf.loadBalancingState.strategy) {
                 LoadBalancingStrategy.ONLY_ONE_SERVER -> activeEndpoints.toList().first()
                 LoadBalancingStrategy.ROUND_ROBIN -> activeEndpoints.toList()[roundRobinIndex].also {

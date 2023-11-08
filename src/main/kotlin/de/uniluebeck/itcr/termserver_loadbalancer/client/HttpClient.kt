@@ -1,8 +1,8 @@
 package de.uniluebeck.itcr.termserver_loadbalancer.client
 
-import de.uniluebeck.itcr.termserver_loadbalancer.SslSettings
-import de.uniluebeck.itcr.termserver_loadbalancer.generateKeystoreFromDir
 import de.uniluebeck.itcr.termserver_loadbalancer.logger
+import de.uniluebeck.itcr.termserver_loadbalancer.ssl.SslSettings
+import de.uniluebeck.itcr.termserver_loadbalancer.ssl.generateKeystoreFromDir
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import java.io.File
