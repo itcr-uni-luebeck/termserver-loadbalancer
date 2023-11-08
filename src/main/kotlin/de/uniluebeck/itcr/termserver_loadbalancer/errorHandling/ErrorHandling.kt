@@ -4,6 +4,7 @@ import de.uniluebeck.itcr.termserver_loadbalancer.fhir.FhirVersionUnsupportedExc
 import de.uniluebeck.itcr.termserver_loadbalancer.fhir.desiredFhirEncoding
 import de.uniluebeck.itcr.termserver_loadbalancer.fhir.encodeResourceToDesiredFhirType
 import de.uniluebeck.itcr.termserver_loadbalancer.logger
+import de.uniluebeck.itcr.termserver_loadbalancer.models.EndpointSettingsError
 import io.ktor.client.call.*
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -31,6 +32,7 @@ fun generateOperationOutcome(cause: Throwable): Pair<OperationOutcome, HttpStatu
         is FhirVersionUnsupportedException -> OperationOutcome.IssueType.NOTSUPPORTED to HttpStatusCode.BadRequest
         is UnsupportedContentTypeException, is UnsupportedMediaTypeException -> OperationOutcome.IssueType.INVALID to HttpStatusCode.UnsupportedMediaType
         is NotImplementedError -> OperationOutcome.IssueType.NOTSUPPORTED to HttpStatusCode.NotImplemented
+        is EndpointSettingsError -> OperationOutcome.IssueType.INVALID to HttpStatusCode.ExpectationFailed
         else -> OperationOutcome.IssueType.EXCEPTION to HttpStatusCode.InternalServerError
     }
     val operationOutcome = OperationOutcome().apply {

@@ -33,10 +33,10 @@ class Endpoints : JsonBackedStorage<Endpoint>() {
     fun addEndpoint(endpoint: Endpoint) {
         when {
             endpointList.any { it.uri == endpoint.uri } -> {
-                throw IllegalArgumentException("Endpoint URI already exists")
+                throw EndpointSettingsError("Endpoint URI already exists")
             }
             endpointList.any { it.name == endpoint.name } -> {
-                throw IllegalArgumentException("Endpoint name already exists")
+                throw EndpointSettingsError("Endpoint name already exists")
             }
             else -> {
                 val uuid = UUID.randomUUID().toString()
@@ -56,3 +56,5 @@ class Endpoints : JsonBackedStorage<Endpoint>() {
         writeEndpoints()
     }
 }
+
+class EndpointSettingsError(message: String) : Exception(message)

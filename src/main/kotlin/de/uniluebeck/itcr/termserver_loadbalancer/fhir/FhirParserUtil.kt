@@ -22,7 +22,7 @@ private val fhirXmlParser: IParser by lazy {
 fun getParser(contentType: ContentType): IParser = when (contentType) {
     ContentType.Application.Json, contentTypeFhirJson -> fhirJsonParser
     ContentType.Application.Xml, contentTypeFhirXml -> fhirXmlParser
-    else -> throw IllegalArgumentException("Unsupported content type $contentType")
+    else -> throw UnsupportedMediaTypeException(contentType)
 }
 
 fun validateFhirVersion(fhirVersionId: String?) = when (fhirVersionId) {
@@ -71,7 +71,6 @@ fun encodeResourceToDesiredFhirType(domainResource: DomainResource, contentType:
 
 suspend fun ApplicationCall.respondFhir(resource: DomainResource) {
     val requestedContentType = this.desiredFhirEncoding()
-    // TODO: consider FHIR versions?
     validateFhirVersion(requestedContentType).let { (fhirVersionIsValid, fhirVersion) ->
         if (!fhirVersionIsValid) {
             throw FhirVersionUnsupportedException(fhirVersion)
