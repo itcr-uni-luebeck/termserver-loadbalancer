@@ -5,12 +5,6 @@ import io.ktor.server.routing.*
 import java.io.File
 
 fun Route.staticRouting() {
-    static("/static") {
-        resources("static")
-        files(".")
-    }
-    static("/openapi") {
-        staticRootFolder = File("src/main/resources/openapi")
-        files(".")
-    }
+    staticResources("/static", "static")
+    staticFiles("/openapi", File("src/main/resources/openapi"))
 }

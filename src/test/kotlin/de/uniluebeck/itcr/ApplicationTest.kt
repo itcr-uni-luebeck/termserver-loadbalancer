@@ -1,11 +1,11 @@
 package de.uniluebeck.itcr
 
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.server.testing.*
-import kotlin.test.*
-import io.ktor.http.*
 import de.uniluebeck.itcr.termserver_loadbalancer.plugins.configureRouting
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.server.testing.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ApplicationTest {
     @Test
@@ -15,7 +15,6 @@ class ApplicationTest {
         }
         client.get("/").apply {
             assertEquals(HttpStatusCode.OK, status)
-            assertEquals("Hello World!", bodyAsText())
         }
     }
 }

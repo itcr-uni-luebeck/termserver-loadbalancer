@@ -23,6 +23,7 @@ fun main() {
         //log = logger
         connector {
             port = System.getenv("TERMSERVER_LOADBALANCER_PORT")?.toInt() ?: 8080
+            logger.info("Binding to port $port")
         }
         configureTls()
         module(Application::module)
