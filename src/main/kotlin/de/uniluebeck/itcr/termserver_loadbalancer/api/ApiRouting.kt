@@ -4,6 +4,7 @@ import de.uniluebeck.itcr.termserver_loadbalancer.Storage.Companion.endpoints
 import de.uniluebeck.itcr.termserver_loadbalancer.Storage.Companion.loadBalancerConf
 import de.uniluebeck.itcr.termserver_loadbalancer.models.Endpoint
 import de.uniluebeck.itcr.termserver_loadbalancer.models.Endpoints
+import de.uniluebeck.itcr.termserver_loadbalancer.models.validateEndpoint
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -42,7 +43,8 @@ private fun Route.endpointsRoute() {
             call.respond(HttpStatusCode.BadRequest, "Endpoint ID must not be set")
             return@post
         }
-        endpoints.addEndpoint(endpoint)
+        val endpointDetails = validateEndpoint(endpoint)
+        endpoints.addEndpoint(endpoint, endpointDetails)
         if (call.request.accept()?.contains("html") == true ) {
             call.respondRedirect("/ui")
         }
