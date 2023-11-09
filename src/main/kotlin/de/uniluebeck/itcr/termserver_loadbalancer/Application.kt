@@ -33,11 +33,11 @@ fun main() {
 }
 
 fun Application.module() {
+    configureErrorHandling()
     configureMonitoring()
     configureSerialization()
     //configureTemplating()
     configureHTTP()
     configureRouting()
-    configureErrorHandling()
 }
 

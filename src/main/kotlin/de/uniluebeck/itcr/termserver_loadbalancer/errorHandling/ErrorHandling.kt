@@ -1,5 +1,6 @@
 package de.uniluebeck.itcr.termserver_loadbalancer.errorHandling
 
+import de.uniluebeck.itcr.termserver_loadbalancer.api.ApiException
 import de.uniluebeck.itcr.termserver_loadbalancer.fhir.FhirVersionUnsupportedException
 import de.uniluebeck.itcr.termserver_loadbalancer.fhir.desiredFhirEncoding
 import de.uniluebeck.itcr.termserver_loadbalancer.fhir.encodeResourceToDesiredFhirType
@@ -33,6 +34,7 @@ fun generateOperationOutcome(cause: Throwable): Pair<OperationOutcome, HttpStatu
         is UnsupportedContentTypeException, is UnsupportedMediaTypeException -> OperationOutcome.IssueType.INVALID to HttpStatusCode.UnsupportedMediaType
         is NotImplementedError -> OperationOutcome.IssueType.NOTSUPPORTED to HttpStatusCode.NotImplemented
         is EndpointSettingsError -> OperationOutcome.IssueType.INVALID to HttpStatusCode.ExpectationFailed
+        is ApiException -> cause.issueType to cause.statusCode
         else -> OperationOutcome.IssueType.EXCEPTION to HttpStatusCode.InternalServerError
     }
     val operationOutcome = OperationOutcome().apply {

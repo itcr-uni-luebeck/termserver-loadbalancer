@@ -13,7 +13,7 @@ import java.util.*
 data class Endpoint(
     val uuid: String? = null,
     private val url: String,
-    val name: String,
+    val name: String? = null,
     val endpointDetails: EndpointDetails? = null
 ) {
     val uri: URI get() = URI(url.removeSuffix("/").plus("/"))
@@ -37,22 +37,20 @@ class Endpoints : JsonBackedStorage<Endpoint>() {
 
     fun getEndpoints(): List<Endpoint> = endpointList.toList()
 
-    fun addEndpoint(endpoint: Endpoint, endpointDetails: EndpointDetails) {
-        when {
-            endpointList.any { it.uri == endpoint.uri } -> {
-                throw EndpointSettingsError("Endpoint URI already exists")
-            }
-
-            endpointList.any { it.name == endpoint.name } -> {
-                throw EndpointSettingsError("Endpoint name already exists")
-            }
-
-            else -> {
-                val uuid = UUID.randomUUID().toString()
-                endpointList.add(endpoint.copy(uuid = uuid, endpointDetails = endpointDetails))
-                writeEndpoints()
-                loadBalancerConf.addEndpoint(uuid)
-            }
+    fun addEndpoint(endpoint: Endpoint, endpointDetails: EndpointDetails): Endpoint = when {
+        endpointList.any { it.uri == endpoint.uri } -> {
+            throw EndpointSettingsError("Endpoint URI already exists")
+        }
+        endpointList.any { it.name == endpoint.name } -> {
+            throw EndpointSettingsError("Endpoint name already exists")
+        }
+        else -> {
+            val uuid = UUID.randomUUID().toString()
+            val newEndpoint = endpoint.copy(uuid = uuid, endpointDetails = endpointDetails)
+            endpointList.add(newEndpoint)
+            writeEndpoints()
+            loadBalancerConf.addEndpoint(uuid)
+            newEndpoint
         }
     }
 
@@ -68,9 +66,9 @@ class Endpoints : JsonBackedStorage<Endpoint>() {
 
 suspend fun validateEndpoint(endpoint: Endpoint): EndpointDetails {
     val capabilityStatement = FhirAwareClient.getDomainResource<CapabilityStatement>(endpoint, "metadata")
-    val fhirVersion = capabilityStatement.fhirVersion.toString()
+    val fhirVersion = capabilityStatement.fhirVersionElement.asStringValue()
     return EndpointDetails(
-        fhirVersion = fhirVersion,
+        fhirVersion = "FHIR $fhirVersion",
         softwareName = capabilityStatement.software.name,
         softwareVersion = capabilityStatement.software.version
     )
