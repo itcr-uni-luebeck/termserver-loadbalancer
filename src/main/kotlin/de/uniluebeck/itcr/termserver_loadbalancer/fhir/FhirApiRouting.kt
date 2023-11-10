@@ -1,10 +1,10 @@
 package de.uniluebeck.itcr.termserver_loadbalancer.fhir
 
-import de.uniluebeck.itcr.termserver_loadbalancer.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import de.uniluebeck.itcr.termserver_loadbalancer.APP_NAME
+import de.uniluebeck.itcr.termserver_loadbalancer.APP_VERSION
+import de.uniluebeck.itcr.termserver_loadbalancer.Storage
+import de.uniluebeck.itcr.termserver_loadbalancer.logger
 import io.ktor.server.application.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.hl7.fhir.r4b.model.*
 
@@ -15,13 +15,14 @@ fun Route.fhirApi() {
     }
 
     get("/{...fhirLocation}") {
-        val fhirLocation = call.parameters["...fhirLocation"] ?: ""
-        logger.info("FHIR GET request to $fhirLocation")
-        val desiredEncoding = call.desiredFhirEncoding()
-        val (balancedResponse, downstreamUrl) = LoadBalancer.requestGet(fhirLocation, desiredEncoding)
-        logger.info(balancedResponse.toString())
-        call.response.header("X-Downstream-URL", downstreamUrl.toString())
-        call.respondText(balancedResponse.bodyAsText(), balancedResponse.contentType(), balancedResponse.status)
+//        val fhirLocation = call.parameters["...fhirLocation"] ?: ""
+//        logger.info("FHIR GET request to $fhirLocation")
+//        val desiredEncoding = call.desiredFhirEncoding()
+//        val (balancedResponse, downstreamUrl) = LoadBalancer.requestGet(fhirLocation, desiredEncoding)
+//        logger.info(balancedResponse.toString())
+//        call.response.header("X-Downstream-URL", downstreamUrl.toString())
+//        call.respondText(balancedResponse.bodyAsText(), balancedResponse.contentType(), balancedResponse.status)
+        TODO()
     }
 
 }

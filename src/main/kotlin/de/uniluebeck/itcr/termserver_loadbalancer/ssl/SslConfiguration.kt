@@ -63,7 +63,7 @@ fun generateKeystoreFromDir(dir: File, buildServerKeystore: Boolean): SslSetting
                         logger.warn("Did not find a password file for keystore ${certificateFile.absolutePath}, assuming no password!")
                         null
                     }
-                }
+                }?.trim()
                 val innerKeystore = KeyStore.getInstance("PKCS12")
                 innerKeystore.load(certificateFile.inputStream(), keystorePassword?.toCharArray())
                 if (buildServerKeystore) {
@@ -87,7 +87,7 @@ fun generateKeystoreFromDir(dir: File, buildServerKeystore: Boolean): SslSetting
                     keystore.setEntry(keyAlias, entry, pwProtection)
                 } else {
                     innerKeystore.aliases().toList().forEach { alias ->
-                        println()
+                        logger.info("Loaded trusted certificate alias $alias from $certificateFile")
                         keystore.setCertificateEntry(alias, innerKeystore.getCertificate(alias))
                     }
                 }

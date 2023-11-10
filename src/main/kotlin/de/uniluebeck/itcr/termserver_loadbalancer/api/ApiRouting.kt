@@ -3,14 +3,17 @@ package de.uniluebeck.itcr.termserver_loadbalancer.api
 import de.uniluebeck.itcr.termserver_loadbalancer.Storage.Companion.endpoints
 import de.uniluebeck.itcr.termserver_loadbalancer.Storage.Companion.loadBalancerConf
 import de.uniluebeck.itcr.termserver_loadbalancer.logger
-import de.uniluebeck.itcr.termserver_loadbalancer.models.Endpoint
-import de.uniluebeck.itcr.termserver_loadbalancer.models.validateEndpoint
+import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.Endpoint
+import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.EndpointRole
+import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.validateEndpoint
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
+import kotlinx.serialization.Serializable
 import org.hl7.fhir.r4b.model.OperationOutcome
 
 fun Route.routeApi() {
@@ -59,8 +62,12 @@ private fun Route.endpointsRoute() {
 
             else -> call.receive()
         }
-        if (endpoint.uuid != null) {
-            throw return@post
+        if (endpoint.id?.isNotBlank() == true) {
+            throw ApiException(
+                "ID must not be set, it will be automatically generated",
+                OperationOutcome.IssueType.INVALID,
+                HttpStatusCode.BadRequest
+            )
         }
         if (endpoint.name.isNullOrBlank()) {
             throw ApiException("Name must be set", OperationOutcome.IssueType.INVALID, HttpStatusCode.BadRequest)
@@ -72,11 +79,7 @@ private fun Route.endpointsRoute() {
 
     route("{endpoint_id}") {
         get {
-            val endpointId = call.parameters["endpoint_id"] ?: throw ApiException(
-                "Endpoint ID must be set",
-                OperationOutcome.IssueType.INVALID,
-                HttpStatusCode.BadRequest
-            )
+            val endpointId = call.getEndpointId()
             val endpoint = endpoints.getEndpoints(endpointId)
             if (endpoint == null) {
                 throw ApiException(
@@ -89,16 +92,83 @@ private fun Route.endpointsRoute() {
             }
         }
 
-        post("/delete") {
+        delete {
             deleteEndpoint()
         }
 
-        delete {
-            deleteEndpoint()
+        endpointSubRoutes()
+    }
+}
+
+private fun Route.endpointSubRoutes() {
+    route("role") {
+
+        @Serializable
+        data class RoleRequest(val role: EndpointRole, val id: String? = null)
+
+        get {
+            val endpointId = call.getEndpointId()
+            val endpoint = endpoints.getEndpoints(endpointId)
+            if (endpoint == null) {
+                throw NotFoundException("Endpoint $endpointId not found")
+            } else {
+                val role = loadBalancerConf.loadBalancingState.endpointRoleMap[endpointId]
+                if (role == null) {
+                    throw IllegalStateException("Endpoint $endpointId has no role")
+                } else {
+                    call.respond(RoleRequest(role, id = endpointId))
+                }
+            }
+        }
+
+        post {
+            val endpointId = call.getEndpointId()
+            if (endpointId !in endpoints.getEndpoints().mapNotNull { it.id }) {
+                throw NotFoundException("Endpoint $endpointId not found")
+            }
+            val data = call.receive<RoleRequest>()
+            val newConfig = loadBalancerConf.designateEndpointAs(endpointId, data.role)
+            call.respond(newConfig)
+        }
+    }
+    route("readonly") {
+        @Serializable
+        data class ReadonlyRequest(val readonly: Boolean, val id: String? = null)
+
+        get {
+            val endpointId = call.getEndpointId()
+            val endpoint = endpoints.getEndpoints(endpointId)
+            if (endpoint == null) {
+                throw NotFoundException("Endpoint $endpointId not found")
+            } else {
+                val readonly = loadBalancerConf.loadBalancingState.endpointReadonlyMap[endpointId]
+                if (readonly == null) {
+                    throw IllegalStateException("Endpoint $endpointId has no readonly setting")
+                } else {
+                    call.respond(ReadonlyRequest(readonly, id = endpointId))
+                }
+            }
+        }
+        post {
+            val endpointId = call.getEndpointId()
+            if (endpointId !in endpoints.getEndpoints().mapNotNull { it.id }) {
+                throw NotFoundException("Endpoint $endpointId not found")
+            }
+            val data = call.receive<ReadonlyRequest>()
+            val newConfig = loadBalancerConf.readonlyEndpoint(endpointId, data.readonly)
+            call.respond(newConfig)
         }
     }
 }
 
+
+fun ApplicationCall.getEndpointId(): String {
+    return this.parameters["endpoint_id"] ?: throw ApiException(
+        "Endpoint ID must be set",
+        OperationOutcome.IssueType.INVALID,
+        HttpStatusCode.BadRequest
+    )
+}
 
 private suspend fun PipelineContext<Unit, ApplicationCall>.deleteEndpoint() {
     val endpointId =

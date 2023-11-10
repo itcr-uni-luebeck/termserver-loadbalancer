@@ -1,11 +1,12 @@
 // noinspection JSUnresolvedReference
 
 $(document).ready(function () {
-    $(".delete-button").click(function () {
+    $(".endpoint-delete-button").click(function () {
         let uuid = $(this).val();
         $.confirm({
             title: "Really delete?",
             content: `Do you really want to delete the configuration ${uuid}?`,
+            type: 'purple',
             buttons: {
                 confirm: function () {
                     console.log(`Deleting for ${uuid}`);
@@ -37,8 +38,30 @@ $(document).ready(function () {
                 }),
                 success: function (created) {
                     console.log(created);
-                    alert(`Created new endpoint with URL ${created.url} and ID ${created.uuid}`);
-                    location.reload()
+                    $.confirm({
+                        title: "Success",
+                        content: `Created new endpoint with URL ${created.url} and ID ${created.id}`,
+                        type: 'green',
+                        buttons: {
+                            ok: function () {
+                                location.reload();
+                            }
+                        }
+                    })
+                },
+                error: function(xhr, textStatus) {
+                    let json = JSON.parse(xhr.responseText);
+                    let formattedError = `Error '${textStatus}' creating new endpoint: \n${JSON.stringify(json, null, 2)}`
+                    $.confirm({
+                        title: "Error",
+                        content: formattedError,
+                        type: 'red',
+                        buttons: {
+                            ok: function () {
+                                location.reload();
+                            }
+                        }
+                    });
                 },
                 contentType: "application/json"
             });

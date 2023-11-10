@@ -2,7 +2,7 @@ package de.uniluebeck.itcr.termserver_loadbalancer.client
 
 import de.uniluebeck.itcr.termserver_loadbalancer.fhirContext
 import de.uniluebeck.itcr.termserver_loadbalancer.logger
-import de.uniluebeck.itcr.termserver_loadbalancer.models.Endpoint
+import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.Endpoint
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import org.hl7.fhir.r4b.model.DomainResource

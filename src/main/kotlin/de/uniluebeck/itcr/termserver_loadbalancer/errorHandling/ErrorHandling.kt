@@ -5,23 +5,32 @@ import de.uniluebeck.itcr.termserver_loadbalancer.fhir.FhirVersionUnsupportedExc
 import de.uniluebeck.itcr.termserver_loadbalancer.fhir.desiredFhirEncoding
 import de.uniluebeck.itcr.termserver_loadbalancer.fhir.encodeResourceToDesiredFhirType
 import de.uniluebeck.itcr.termserver_loadbalancer.logger
-import de.uniluebeck.itcr.termserver_loadbalancer.models.EndpointSettingsError
+import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.EndpointSettingsError
 import io.ktor.client.call.*
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.*
 import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
+import org.hl7.fhir.r4b.model.CodeableConcept
 import org.hl7.fhir.r4b.model.OperationOutcome
 
 fun Application.configureErrorHandling() {
+    suspend fun handlerForException(call: ApplicationCall, cause: Throwable) {
+        val (operationOutcome, statusCode) = generateOperationOutcome(cause)
+        val encoding = call.desiredFhirEncoding(throwOnError = false)
+        val encoded = encodeResourceToDesiredFhirType(operationOutcome, encoding)
+        logger.error("Application error, status code $statusCode; exception: ${cause.message}")
+        call.respondText(text = encoded, contentType = encoding, status = statusCode)
+    }
     install(StatusPages) {
+        status(HttpStatusCode.NotFound) { call, _ ->
+            val notFound = NotFoundException("Resource not found at ${call.request.uri}")
+            handlerForException(call, notFound)
+        }
         exception<Throwable> { call, cause ->
-            val (operationOutcome, statusCode) = generateOperationOutcome(cause)
-            val encoding = call.desiredFhirEncoding(throwOnError = false)
-            val encoded = encodeResourceToDesiredFhirType(operationOutcome, encoding)
-            logger.error("Application error, status code $statusCode; exception: ${cause.message}")
-            call.respondText(text = encoded, contentType = encoding, status = statusCode)
+            handlerForException(call, cause)
         }
     }
 }
@@ -35,12 +44,17 @@ fun generateOperationOutcome(cause: Throwable): Pair<OperationOutcome, HttpStatu
         is NotImplementedError -> OperationOutcome.IssueType.NOTSUPPORTED to HttpStatusCode.NotImplemented
         is EndpointSettingsError -> OperationOutcome.IssueType.INVALID to HttpStatusCode.ExpectationFailed
         is ApiException -> cause.issueType to cause.statusCode
-        else -> OperationOutcome.IssueType.EXCEPTION to HttpStatusCode.InternalServerError
+        is IllegalStateException -> OperationOutcome.IssueType.UNKNOWN to HttpStatusCode.InternalServerError
+        is NotFoundException -> OperationOutcome.IssueType.NOTFOUND to HttpStatusCode.NotFound
+        else -> OperationOutcome.IssueType.UNKNOWN to HttpStatusCode.InternalServerError
     }
     val operationOutcome = OperationOutcome().apply {
         addIssue(OperationOutcome.OperationOutcomeIssueComponent().apply {
             severity = OperationOutcome.IssueSeverity.FATAL
             code = issueCode
+            details = CodeableConcept().apply {
+                text = cause::class.simpleName
+            }
             diagnostics = cause.message
         })
     }

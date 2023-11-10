@@ -4,11 +4,11 @@ import de.uniluebeck.itcr.termserver_loadbalancer.Storage
 import kotlinx.html.*
 
 private enum class TableColumn(val title: String, val width: Int) {
-    UUID("UUID", 3),
+    UUID("ID", 1),
     METADATA("Metadata", 3),
-    URI("URI", 3),
+    URI("URI", 4),
     NAME("Name", 2),
-    ACTIONS("Actions", 1)
+    ACTIONS("Actions", 2)
 }
 
 fun BODY.configuredServersBlock() {
@@ -36,7 +36,7 @@ private fun DIV.contentRows() {
     Storage.endpoints.getEndpoints().forEach { endpoint ->
         div("row endpoint-table") {
             div("col-${TableColumn.UUID.width}") {
-                +endpoint.uuid!!
+                +endpoint.id!!
             }
             div("col-${TableColumn.METADATA.width}") {
                 val formattedDetails = listOfNotNull(
@@ -55,8 +55,8 @@ private fun DIV.contentRows() {
                 +endpoint.name!!
             }
             div("col-${TableColumn.ACTIONS.width}") {
-                button(classes = "delete-button btn btn-danger") {
-                    value = endpoint.uuid!!
+                button(classes = "endpoint-delete-button btn btn-danger") {
+                    value = endpoint.id!!
                     +"Delete"
                 }
             }
@@ -98,7 +98,7 @@ private fun DIV.addForm() {
                 }
             }
             div("col-${TableColumn.ACTIONS.width}") {
-                submitInput(classes = "btn") {
+                submitInput(classes = "btn btn-primary") {
                     value = "Add"
                 }
             }

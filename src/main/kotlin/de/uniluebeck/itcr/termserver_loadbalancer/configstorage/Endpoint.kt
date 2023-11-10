@@ -1,4 +1,4 @@
-package de.uniluebeck.itcr.termserver_loadbalancer.models
+package de.uniluebeck.itcr.termserver_loadbalancer.configstorage
 
 import de.uniluebeck.itcr.termserver_loadbalancer.JsonBackedStorage
 import de.uniluebeck.itcr.termserver_loadbalancer.Storage.Companion.loadBalancerConf
@@ -11,7 +11,7 @@ import java.util.*
 
 @Serializable
 data class Endpoint(
-    val uuid: String? = null,
+    val id: String? = null,
     private val url: String,
     val name: String? = null,
     val endpointDetails: EndpointDetails? = null
@@ -19,6 +19,15 @@ data class Endpoint(
     val uri: URI get() = URI(url.removeSuffix("/").plus("/"))
 
     fun resolveUri(path: String): URI = uri.resolve(path.removePrefix("/"))
+}
+
+fun generateShortUuid(existingIds: List<String>): String {
+    val uuid = UUID.randomUUID().toString()
+    val shortUuid = uuid.split("-").first()
+    if (existingIds.contains(shortUuid)) {
+        return generateShortUuid(existingIds)
+    }
+    return shortUuid
 }
 
 class Endpoints : JsonBackedStorage<Endpoint>() {
@@ -45,20 +54,20 @@ class Endpoints : JsonBackedStorage<Endpoint>() {
             throw EndpointSettingsError("Endpoint name already exists")
         }
         else -> {
-            val uuid = UUID.randomUUID().toString()
-            val newEndpoint = endpoint.copy(uuid = uuid, endpointDetails = endpointDetails)
+            val shortUuid = generateShortUuid(endpointList.mapNotNull { it.id })
+            val newEndpoint = endpoint.copy(id = shortUuid, endpointDetails = endpointDetails)
             endpointList.add(newEndpoint)
             writeEndpoints()
-            loadBalancerConf.addEndpoint(uuid)
+            loadBalancerConf.addEndpoint(newEndpoint)
             newEndpoint
         }
     }
 
     private fun writeEndpoints() = writeToStorage(endpointList.toList())
 
-    fun getEndpoints(endpointId: String): Endpoint? = endpointList.find { it.uuid.toString() == endpointId }
+    fun getEndpoints(endpointId: String): Endpoint? = endpointList.find { it.id.toString() == endpointId }
     fun removeEndpoint(endpointId: String) {
-        endpointList.removeIf { it.uuid.toString() == endpointId }
+        endpointList.removeIf { it.id.toString() == endpointId }
         loadBalancerConf.removeEndpoint(endpointId)
         writeEndpoints()
     }

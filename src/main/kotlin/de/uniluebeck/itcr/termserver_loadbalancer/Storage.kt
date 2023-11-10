@@ -2,9 +2,8 @@ package de.uniluebeck.itcr.termserver_loadbalancer
 
 import de.uniluebeck.itcr.termserver_loadbalancer.Storage.Companion.fileFolder
 import de.uniluebeck.itcr.termserver_loadbalancer.Storage.Companion.json
-import de.uniluebeck.itcr.termserver_loadbalancer.models.Endpoints
-import de.uniluebeck.itcr.termserver_loadbalancer.models.LoadBalancerConfiguration
-import kotlinx.serialization.decodeFromString
+import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.Endpoints
+import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.LoadBalancerConfiguration
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -21,9 +20,11 @@ class Storage {
 }
 
 abstract class JsonBackedStorage<T> {
+    val debugJson = Json { prettyPrint = false }
     val fileLocation get() = fileFolder.resolve("${this::class.simpleName}.json")
     inline fun <reified T> writeToStorage(data: T) {
         val jsonString = json.encodeToString(data)
+        logger.debug("${this::class.simpleName} JSON: ${debugJson.encodeToString(data)}")
         fileLocation.writeText(jsonString)
     }
     inline fun <reified T> readFromStorage(): T {
