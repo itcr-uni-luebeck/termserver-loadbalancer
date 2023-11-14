@@ -1,8 +1,7 @@
 package de.uniluebeck.itcr.termserver_loadbalancer.plugins
 
-import io.ktor.http.*
+import de.uniluebeck.itcr.termserver_loadbalancer.plugins.OurMetrics.Companion.appMicrometerRegistry
 import io.ktor.server.application.*
-import io.ktor.server.metrics.dropwizard.*
 import io.ktor.server.metrics.micrometer.*
 import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.callloging.*
@@ -13,34 +12,41 @@ import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import org.slf4j.event.Level
 
+private val ignoreLoggingPrefixes = listOf("static", "metrics", "favicon", "ui", "apple-touch-icon")
+
 fun Application.configureMonitoring() {
     install(CallLogging) {
         level = Level.INFO
-        filter { call -> !call.request.path().contains("static") }
+        filter { call ->
+            ignoreLoggingPrefixes.none { prefix ->
+                call.request.path().trimStart('/').startsWith(prefix)
+            }
+        }
         callIdMdc("call-id")
     }
     install(CallId) {
-        header(HttpHeaders.XRequestId)
+        generate(8, "abcdef1234567890")
         verify { callId: String ->
             callId.isNotEmpty()
         }
     }
-    install(DropwizardMetrics) {
-//        Slf4jReporter.forRegistry(registry)
-//            .outputTo(logger)
-//            .convertRatesTo(TimeUnit.SECONDS)
-//            .convertDurationsTo(TimeUnit.MILLISECONDS)
-//            .build()
-//            .start(5, TimeUnit.MINUTES)
-    }
-    val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     install(MicrometerMetrics) {
         registry = appMicrometerRegistry
+        metricName = "lb"
+        meterBinders = emptyList()
     }
     routing {
         get("/metrics") {
             call.respond(appMicrometerRegistry.scrape())
+        }
+    }
+}
+
+class OurMetrics {
+    companion object {
+        val appMicrometerRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT).apply {
+            config().commonTags("application", "tslb")
         }
     }
 }

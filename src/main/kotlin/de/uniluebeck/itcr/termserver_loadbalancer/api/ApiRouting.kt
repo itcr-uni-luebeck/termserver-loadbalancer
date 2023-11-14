@@ -6,6 +6,8 @@ import de.uniluebeck.itcr.termserver_loadbalancer.logger
 import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.Endpoint
 import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.EndpointRole
 import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.validateEndpoint
+import de.uniluebeck.itcr.termserver_loadbalancer.plugins.OurMetrics
+import de.uniluebeck.itcr.termserver_loadbalancer.plugins.OurMetrics.Companion.appMicrometerRegistry
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.*
@@ -13,6 +15,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
+import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.Metrics.counter
 import kotlinx.serialization.Serializable
 import org.hl7.fhir.r4b.model.OperationOutcome
 
@@ -29,6 +33,7 @@ fun Route.routeApi() {
 
 private fun Route.endpointsRoute() {
     get {
+        appMicrometerRegistry.counter("endpoints.list").increment()
         call.respond(endpoints.getEndpoints())
     }
 
@@ -36,6 +41,7 @@ private fun Route.endpointsRoute() {
         post {
             val endpoint = call.receive<Endpoint>()
             logger.info("Validating endpoint: ${endpoint.uri}")
+            appMicrometerRegistry.counter("endpoints.validate", "endpointId", endpoint.id).increment()
             call.respond(validateEndpoint(endpoint))
         }
     }
@@ -62,6 +68,7 @@ private fun Route.endpointsRoute() {
 
             else -> call.receive()
         }
+        appMicrometerRegistry.counter("endpoints.create", "endpointId", endpoint.id).increment()
         if (endpoint.id?.isNotBlank() == true) {
             throw ApiException(
                 "ID must not be set, it will be automatically generated",
@@ -81,6 +88,7 @@ private fun Route.endpointsRoute() {
         get {
             val endpointId = call.getEndpointId()
             val endpoint = endpoints.getEndpoints(endpointId)
+            appMicrometerRegistry.counter("endpoint.get", "endpointId", endpointId).increment()
             if (endpoint == null) {
                 throw ApiException(
                     "Endpoint $endpointId not found",
@@ -108,6 +116,7 @@ private fun Route.endpointSubRoutes() {
 
         get {
             val endpointId = call.getEndpointId()
+            appMicrometerRegistry.counter("endpoint.role.get", "endpointId", endpointId).increment()
             val endpoint = endpoints.getEndpoints(endpointId)
             if (endpoint == null) {
                 throw NotFoundException("Endpoint $endpointId not found")
@@ -126,6 +135,7 @@ private fun Route.endpointSubRoutes() {
             if (endpointId !in endpoints.getEndpoints().mapNotNull { it.id }) {
                 throw NotFoundException("Endpoint $endpointId not found")
             }
+            appMicrometerRegistry.counter("endpoint.role.set", "endpointId", endpointId).increment()
             val data = call.receive<RoleRequest>()
             val newConfig = loadBalancerConf.designateEndpointAs(endpointId, data.role)
             call.respond(newConfig)
@@ -138,6 +148,7 @@ private fun Route.endpointSubRoutes() {
         get {
             val endpointId = call.getEndpointId()
             val endpoint = endpoints.getEndpoints(endpointId)
+            appMicrometerRegistry.counter("endpoint.readonly.get", "endpointId", endpointId).increment()
             if (endpoint == null) {
                 throw NotFoundException("Endpoint $endpointId not found")
             } else {
@@ -154,6 +165,7 @@ private fun Route.endpointSubRoutes() {
             if (endpointId !in endpoints.getEndpoints().mapNotNull { it.id }) {
                 throw NotFoundException("Endpoint $endpointId not found")
             }
+            appMicrometerRegistry.counter("endpoint.readonly.set", "endpointId", endpointId).increment()
             val data = call.receive<ReadonlyRequest>()
             val newConfig = loadBalancerConf.readonlyEndpoint(endpointId, data.readonly)
             call.respond(newConfig)
@@ -165,6 +177,7 @@ private fun Route.endpointSubRoutes() {
         data class EnabledRequest(val enabled: Boolean, val id: String? = null)
 
         get {
+            appMicrometerRegistry.counter("endpoint.enabled.get").increment()
             val endpointId = call.getEndpointId()
             val endpoint = endpoints.getEndpoints(endpointId)
             if (endpoint == null) {
@@ -185,6 +198,7 @@ private fun Route.endpointSubRoutes() {
             }
             val data = call.receive<EnabledRequest>()
             val newConfig = loadBalancerConf.readonlyEndpoint(endpointId, data.enabled)
+            appMicrometerRegistry.counter("endpoint.enabled.set", "endpointId", endpointId).increment()
             call.respond(newConfig)
         }
     }
@@ -206,6 +220,7 @@ private suspend fun PipelineContext<Unit, ApplicationCall>.deleteEndpoint() {
             OperationOutcome.IssueType.INVALID,
             HttpStatusCode.BadRequest
         )
+    appMicrometerRegistry.counter("endpoint.delete.get", "endpointId", endpointId).increment()
     val endpoint = endpoints.getEndpoints(endpointId)
     if (endpoint == null) {
         throw ApiException(

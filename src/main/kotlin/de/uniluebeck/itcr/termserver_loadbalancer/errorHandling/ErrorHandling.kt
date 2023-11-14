@@ -6,6 +6,8 @@ import de.uniluebeck.itcr.termserver_loadbalancer.fhir.desiredFhirEncoding
 import de.uniluebeck.itcr.termserver_loadbalancer.fhir.encodeResourceToDesiredFhirType
 import de.uniluebeck.itcr.termserver_loadbalancer.logger
 import de.uniluebeck.itcr.termserver_loadbalancer.configstorage.EndpointSettingsError
+import de.uniluebeck.itcr.termserver_loadbalancer.plugins.OurMetrics
+import de.uniluebeck.itcr.termserver_loadbalancer.plugins.OurMetrics.Companion.appMicrometerRegistry
 import io.ktor.client.call.*
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -58,5 +60,6 @@ fun generateOperationOutcome(cause: Throwable): Pair<OperationOutcome, HttpStatu
             diagnostics = cause.message
         })
     }
+    appMicrometerRegistry.counter("errors.operationoutcome", "issueCode", issueCode.toCode()).increment()
     return operationOutcome to httpStatus
 }
