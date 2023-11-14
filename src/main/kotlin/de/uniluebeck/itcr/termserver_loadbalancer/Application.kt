@@ -27,6 +27,7 @@ fun main() {
             logger.info("Binding to port $port")
         }
         configureTls()
+        watchPaths = listOf("classes", "resources")
         module(Application::module)
     }
     embeddedServer(Netty, environment).start(wait = true)
@@ -36,7 +37,6 @@ fun Application.module() {
     configureErrorHandling()
     configureMonitoring()
     configureSerialization()
-    //configureTemplating()
     configureHTTP()
     configureRouting()
 }

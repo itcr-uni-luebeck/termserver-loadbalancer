@@ -159,6 +159,35 @@ private fun Route.endpointSubRoutes() {
             call.respond(newConfig)
         }
     }
+
+    route("enabled") {
+        @Serializable
+        data class EnabledRequest(val enabled: Boolean, val id: String? = null)
+
+        get {
+            val endpointId = call.getEndpointId()
+            val endpoint = endpoints.getEndpoints(endpointId)
+            if (endpoint == null) {
+                throw NotFoundException("Endpoint $endpointId not found")
+            } else {
+                val enabled = loadBalancerConf.loadBalancingState.endpointStatusMap[endpointId]
+                if (enabled == null) {
+                    throw IllegalStateException("Endpoint $endpointId has no readonly setting")
+                } else {
+                    call.respond(EnabledRequest(enabled, id = endpointId))
+                }
+            }
+        }
+        post {
+            val endpointId = call.getEndpointId()
+            if (endpointId !in endpoints.getEndpoints().mapNotNull { it.id }) {
+                throw NotFoundException("Endpoint $endpointId not found")
+            }
+            val data = call.receive<EnabledRequest>()
+            val newConfig = loadBalancerConf.readonlyEndpoint(endpointId, data.enabled)
+            call.respond(newConfig)
+        }
+    }
 }
 
 

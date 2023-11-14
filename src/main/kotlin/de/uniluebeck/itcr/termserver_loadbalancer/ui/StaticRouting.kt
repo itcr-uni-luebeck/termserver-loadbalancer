@@ -7,4 +7,5 @@ import java.io.File
 fun Route.staticRouting() {
     staticResources("/static", "static")
     staticFiles("/openapi", File("src/main/resources/openapi"))
+    staticFiles("/", File("src/main/resources/static/favicon"))
 }

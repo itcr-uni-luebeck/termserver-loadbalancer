@@ -9,8 +9,8 @@ enum class SettingsColumns(val title: String, val width: Int) {
     ID("ID", 1),
     NAME("Name", 2),
     ROLE("Role", 3),
-    READONLY("Read-only", 2),
-    DISABLED("Disabled", 2),
+    READONLY("Read-only", 1),
+    ON_OFF("On/Off", 1),
 }
 
 fun BODY.loadBalancingConfigurationBlock() = div("container-fluid") {
@@ -51,30 +51,52 @@ fun BODY.loadBalancingConfigurationBlock() = div("container-fluid") {
             div("col-${SettingsColumns.READONLY.width}") {
                 readonlyChanger(state, id)
             }
+            div("col-${SettingsColumns.ON_OFF.width}") {
+                onOffChanger(state, id)
+            }
         }
     }
 }
 
-fun DIV.readonlyChanger(state: LoadBalancerState, configId: String) {
+fun DIV.toggleChanger(
+    state: LoadBalancerState,
+    configId: String,
+    booleanGetter: (LoadBalancerState) -> Boolean,
+    labels: Map<Boolean, String>,
+    inputClass: String
+) {
     div("form-check form-switch") {
-        input(InputType.checkBox, classes = "form-check-input check-ro") {
-            val htmlId = "check-ro-$configId"
-            this.role = "switch"
+        input(type = InputType.checkBox, classes = "form-check-input $inputClass") {
+            val htmlId = "$inputClass-$configId"
             this.id = htmlId
-            val endpointReadonly = state.endpointReadonlyMap[configId]!!
-            if (endpointReadonly) {
-                checked = true
-            }
+            this.role = "switch"
+            this.value = configId
+            val valueIsSet = booleanGetter(state)
+            checked = valueIsSet
             label("form-check-label") {
                 htmlFor = htmlId
-                when (endpointReadonly) {
-                    true -> +"R/O"
-                    else -> +"R/W"
-                }
+                val labelValue = labels[valueIsSet]!!
+                +labelValue
             }
         }
     }
 }
+
+fun DIV.readonlyChanger(state: LoadBalancerState, configId: String) = toggleChanger(
+    state = state, configId = configId, booleanGetter = {
+        it.endpointReadonlyMap[configId]!!
+    },
+    labels = mapOf(false to "R/O", true to "R/W"),
+    inputClass = "check-ro"
+)
+
+fun DIV.onOffChanger(state: LoadBalancerState, configId: String) = toggleChanger(
+    state = state, configId = configId, booleanGetter = {
+        it.endpointStatusMap[configId]!!
+    },
+    labels = mapOf(false to "OFF", true to "ON"),
+    inputClass = "check-on-off"
+)
 
 private fun DIV.roleChanger(
     state: LoadBalancerState,
