@@ -27,7 +27,7 @@ fun BODY.loadBalancingConfigurationBlock() = div("container-fluid") {
         }
     }
     div("row") {
-        SettingsColumns.values().forEach {
+        SettingsColumns.entries.forEach {
             div("col-${it.width}") {
                 b {
                     +it.title
@@ -55,6 +55,22 @@ fun BODY.loadBalancingConfigurationBlock() = div("container-fluid") {
                 onOffChanger(state, id)
             }
         }
+    }
+
+    div("row") {
+        div("col-12") {
+            h4 { +"System configuration" }
+        }
+    }
+
+
+    systemConfigurationBlock()
+
+}
+
+private fun DIV.systemConfigurationBlock() {
+    div("row") {
+
     }
 }
 
